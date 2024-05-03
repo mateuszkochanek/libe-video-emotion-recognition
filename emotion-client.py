@@ -1,17 +1,12 @@
 import socket
 
-# Socket setup
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_address = 'server_ip_here'  # Replace 'server_ip_here' with the server's IP address
-port = 8080
-client_socket.connect((server_address, port))
+HOST = 'server_ip_address'  # The server's hostname or IP address
+PORT = 65432                # The port used by the server
 
-try:
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+    s.connect((HOST, PORT))
     while True:
-        data = client_socket.recv(1)
-        if data:
-            print("Emotion Code:", data.decode())
-except KeyboardInterrupt:
-    pass
-
-client_socket.close()
+        data = s.recv(1024)
+        if not data:
+            break
+        print("Received:", data.decode())
