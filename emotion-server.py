@@ -1,36 +1,26 @@
-# Ran on raspberry pi
-
-import socket
+from flask import Flask, request
 import RPi.GPIO as GPIO
 
-# Set up the GPIO pin for the LED
-# LED_PIN = 18
-# GPIO.setmode(GPIO.BCM)
-# GPIO.setup(LED_PIN, GPIO.OUT)
+app = Flask(__name__)
 
-# Set up the server
-HOST = ''  # Accept connections from any address
-PORT = 65432  # Port to listen on (non-privileged ports are > 1023)
+# Set up GPIO
+#LED_PIN = 17
+#PIO.setmode(GPIO.BCM)
+#GPIO.setup(LED_PIN, GPIO.OUT)
 
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.bind((HOST, PORT))
-    s.listen()
-    print("Server is listening...")
-    conn, addr = s.accept()
-    with conn:
-        print('Connected by', addr)
-        while True:
-            data = conn.recv(1024)
-            if not data:
-                break
-            command = data.decode('utf-8')
-            if command == "1":
-                print("YOU ARE NOT HAPPYYYY!!!!")
-                # GPIO.output(LED_PIN, GPIO.HIGH)
-            elif command == "0":
-                print("Good :)")
-                # GPIO.output(LED_PIN, GPIO.LOW)
-            else:
-                print("Invalid command received")
+@app.route('/led', methods=['POST'])
+def control_led():
+    state = request.form.get('state')
+    if state == '1':
+        print("ypu are a sad boi, bad!")
+        #GPIO.output(LED_PIN, GPIO.HIGH)
+        return 'LED ON', 200
+    elif state == '0':
+        print("ypu are a happy boi, good!")
+        #GPIO.output(LED_PIN, GPIO.LOW)
+        return 'LED OFF', 200
+    else:
+        return 'Invalid state', 400
 
-# GPIO.cleanup()
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
