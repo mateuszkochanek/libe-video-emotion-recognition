@@ -1,6 +1,6 @@
 # Ran on PC
 
-import socket
+import requests
 import os
 import argparse
 import cv2
@@ -71,10 +71,14 @@ def load_emotion_recognition_model():
 HOST = 'my-portable-spell.local'  # Replace with the actual IP address of your Raspberry Pi
 PORT = 65432  # Port to connect to the server
 
-def send_command(command):
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect((HOST, PORT))
-        s.sendall(command.encode('utf-8'))
+def send_led_command(state):
+    url = 'http://'+HOST+':5000/led'
+    data = {'state': state}
+    response = requests.post(url, data=data)
+    if response.status_code == 200:
+        print(f'Success: {response.text}')
+    else:
+        print(f'Error: {response.text}')
 
 model = load_emotion_recognition_model()
 mtcnn = MTCNN(select_largest=True)
@@ -108,7 +112,7 @@ try:
 
             # Sending data to client
             message = '0' if emotions[max_emotion_index.item()] == "Happy" else '1'
-            send_command(message)
+            send_led_command(message)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
