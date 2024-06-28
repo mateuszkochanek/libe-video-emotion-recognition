@@ -74,12 +74,6 @@ desired_height = 720
 vid.set(cv2.CAP_PROP_FRAME_WIDTH, desired_width)
 vid.set(cv2.CAP_PROP_FRAME_HEIGHT, desired_height)
 
-fps = vid.get(cv2.CAP_PROP_FPS)
-print("Camera Frame Rate:", fps)
-fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
-landmarks_and_emotion_video_writer = cv2.VideoWriter('landmarks&emotion_view.mp4', fourcc, 5.0, (desired_width, desired_height))
-faces_video_writer = cv2.VideoWriter('faces_only.mp4', fourcc, 5.0, (224, 224))  # Assuming face crops are resized to 224x224
-
 
 # IP address of your Raspberry Pis
 HOST = 'my-portable-spell.local'  # Replace with the actual IP address of your Raspberry Pi
@@ -89,6 +83,8 @@ def send_led_command(state):
     url = 'http://'+HOST+':5000/led'
     data = {'state': state}
     response = requests.post(url, data=data)
+    if state:
+        time.sleep(5)
     if response.status_code == 200:
         print(f'Success: {response.text}')
     else:
@@ -110,7 +106,6 @@ try:
         
         frame_rgb = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
         found_face = mtcnn(frame_rgb)
-        boxes, probs, landmarks = mtcnn.detect(frame_rgb, landmarks=True)
 
 
         if found_face is not None:
@@ -124,41 +119,6 @@ try:
             # Sending data to client
             message = '0' if emotions[max_emotion_index.item()] == "Happy" else '1'
             send_led_command(message)
-
-            frame_rgb2 = frame_rgb.copy()
-            draw = ImageDraw.Draw(frame_rgb)  # Create a drawing context
-            draw2 = ImageDraw.Draw(frame_rgb2)
-
-            if boxes is not None and landmarks is not None:
-                for box, landmark in zip(boxes, landmarks):
-                    draw2.rectangle(box.tolist(), outline=(255, 0, 0), width=6)
-                    draw.rectangle(box.tolist(), outline=(255, 0, 0), width=6)
-                    if landmark is not None:
-                        for point in landmark:
-                            x, y = point
-                            draw2.ellipse((x-5, y-5, x+5, y+5), outline=(0, 255, 0), width=3)
-                            draw.ellipse((x-5, y-5, x+5, y+5), outline=(0, 255, 0), width=3)
-                    x, y, w, h = box
-                    text = emotions[max_emotion_index.item()]
-                    # Optional: define a font
-                    font = ImageFont.truetype("Roboto.ttf", 40)
-                    draw2.text((x, y-50), text, fill=(0, 0, 255), font=font)
-
-            frame_show = cv2.cvtColor(np.array(frame_rgb), cv2.COLOR_RGB2BGR)
-            frame_show2 = cv2.cvtColor(np.array(frame_rgb2), cv2.COLOR_RGB2BGR)
-
-            landmarks_and_emotion_video_writer.write(frame_show2)
-
-
-            faces_frame = found_face.permute(1, 2, 0).numpy()
-            faces_frame = ((faces_frame + 1) / 2.0) * 255.0
-            if faces_frame.max() <= 1.0:
-                faces_frame = (faces_frame * 255).astype(np.uint8)
-            else:
-                faces_frame = faces_frame.astype(np.uint8)
-            faces_frame = cv2.resize(faces_frame, (224, 224))
-            faces_frame = cv2.cvtColor(faces_frame, cv2.COLOR_RGB2BGR)
-            faces_video_writer.write(faces_frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
